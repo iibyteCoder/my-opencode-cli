@@ -1,36 +1,110 @@
-"""OpenCode Client - 通用的 OpenCode 服务器客户端库。
+"""OpenCode Python Client.
 
-提供与 OpenCode 服务器交互的 Python 客户端，支持：
-- 服务器模式启动和管理
-- 会话创建和消息发送
-- SSE 流式响应处理
-- 事件解析
+一个用于与 OpenCode 服务器交互的 Python 客户端库。
 
-示例用法:
-    from opencode_client import OpenCodeClient, ServerConfig
+Example:
+    from opencode_client import AsyncOpenCode
 
-    async with OpenCodeClient(ServerConfig(port=4096)) as client:
-        session_id = await client.create_session("测试会话")
-        response = await client.send_message(session_id, "你好")
-        print(response)
+    async with AsyncOpenCode(base_url="http://localhost:4096") as client:
+        answer = await client.ask("什么是 Python 装饰器？")
+        print(answer)
+
+    # 或者使用同步客户端
+    from opencode_client import OpenCode
+
+    with OpenCode(base_url="http://localhost:4096") as client:
+        answer = client.ask("什么是闭包？")
+        print(answer)
 """
 
 from __future__ import annotations
 
-from .config import ServerConfig
-from .exceptions import OpenCodeError, ServerStartError, SessionError
-from .parser import EventParser, ParsedResult, StructuredData
-from .client import OpenCodeClient
+# 客户端
+from .client import AsyncOpenCode, OpenCode
+
+# 配置
+from .core.config import ClientConfig
+
+# 核心异常
+from .core.errors import (
+    APIError,
+    ConnectionError,
+    MessageError,
+    OpenCodeError,
+    ParseError,
+    ServerStartError,
+    SessionError,
+    TimeoutError,
+    ValidationError,
+)
+
+# 数据模型
+from .models import (
+    AgentConfig,
+    DoneEvent,
+    ErrorEvent,
+    EventType,
+    FileContent,
+    FileInfo,
+    FilePart,
+    ImagePart,
+    MessageContent,
+    MessagePart,
+    MessageSend,
+    OpenCodeConfig,
+    OpenCodeModel,
+    ProviderConfig,
+    Session,
+    SessionCreate,
+    SSEEvent,
+    TextEvent,
+    TextPart,
+    ToolConfig,
+    ToolResultEvent,
+    ToolUseEvent,
+)
+
+__version__ = "0.2.0"
 
 __all__ = [
-    "OpenCodeClient",
-    "ServerConfig",
+    # 版本
+    "__version__",
+    # 异常
     "OpenCodeError",
+    "ConnectionError",
     "ServerStartError",
     "SessionError",
-    "EventParser",
-    "ParsedResult",
-    "StructuredData",
+    "MessageError",
+    "APIError",
+    "ParseError",
+    "TimeoutError",
+    "ValidationError",
+    # 配置
+    "ClientConfig",
+    # 模型
+    "OpenCodeModel",
+    "Session",
+    "SessionCreate",
+    "TextPart",
+    "ImagePart",
+    "FilePart",
+    "MessagePart",
+    "MessageContent",
+    "MessageSend",
+    "SSEEvent",
+    "TextEvent",
+    "ToolUseEvent",
+    "ToolResultEvent",
+    "ErrorEvent",
+    "DoneEvent",
+    "EventType",
+    "FileInfo",
+    "FileContent",
+    "ProviderConfig",
+    "ToolConfig",
+    "AgentConfig",
+    "OpenCodeConfig",
+    # 客户端
+    "AsyncOpenCode",
+    "OpenCode",
 ]
-
-__version__ = "0.1.0"

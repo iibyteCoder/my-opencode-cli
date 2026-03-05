@@ -1,0 +1,6 @@
+"""版本信息。"""
+
+from __future__ import annotations
+
+__version__ = "0.2.0"
+__version_info__ = (0, 2, 0)

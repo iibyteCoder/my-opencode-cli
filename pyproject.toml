@@ -1,26 +1,52 @@
 [project]
 name = "opencode-client"
-version = "0.1.0"
-description = "A Python client library for OpenCode server"
+version = "0.2.0"
+description = "A modern Python client library for OpenCode server"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
+license = "MIT"
+authors = [
+    { name = "OpenCode Client Contributors" }
+]
+keywords = ["opencode", "ai", "llm", "client", "async"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: AsyncIO",
+    "Typing :: Typed",
+]
 dependencies = [
-  "aiohttp>=3.9.0",
-  "rich>=13.0.0",
-  "pydantic>=2.0.0",
-  "pydantic-settings>=2.0.0",
+    "aiohttp>=3.9.0",
+    "rich>=13.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "click>=8.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8.0.0",
-  "pytest-asyncio>=0.23.0",
-  "ruff>=0.7.0",
-  "mypy>=1.11.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.7.0",
+    "mypy>=1.11.0",
+    "types-click",
+    "types-aiofiles",
+    "coverage[toml]>=7.0.0",
+    "pytest-cov>=4.0.0",
 ]
 
 [project.scripts]
 opencode-client = "opencode_client.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/example/opencode-client"
+Documentation = "https://github.com/example/opencode-client#readme"
+Repository = "https://github.com/example/opencode-client.git"
+Issues = "https://github.com/example/opencode-client/issues"
 
 [build-system]
 requires = ["hatchling"]
@@ -40,11 +66,18 @@ line-length = 100
 target-version = "py311"
 src = ["src"]
 
+# 格式化配置
+[tool.ruff.format]
+quote-style = "double"            # 使用双引号
+indent-style = "space"            # 使用空格缩进
+skip-magic-trailing-comma = false # 尊重尾随逗号决定换行
+line-ending = "auto"              # 自动检测行尾
+
 [tool.ruff.lint]
 select = [
   "E",     # pycodestyle errors
-  "F",     # pyflakes
-  "I",     # isort
+  "F",     # pyflakes (包含 F401 unused imports)
+  "I",     # isort (导入排序)
   "N",     # pep8-naming
   "W",     # pycodestyle warnings
   "UP",    # pyupgrade
@@ -63,11 +96,16 @@ ignore = [
   "RUF001", # allow Chinese characters in strings
   "RUF002", # allow Chinese punctuation in docstrings
   "RUF003", # allow Chinese punctuation in comments
+  "RUF022", # allow unsorted __all__ (we use comments to organize exports)
 ]
 
+# 导入排序配置
 [tool.ruff.lint.isort]
 known-first-party = ["opencode_client"]
 required-imports = ["from __future__ import annotations"]
+combine-as-imports = true           # 合并相同模块的 from 和 import
+force-wrap-aliases = true           # 强制换行带别名的导入
+split-on-trailing-comma = true      # 在尾随逗号处分割
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -80,9 +118,22 @@ strict = true
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+strict_concatenate = true
+extra_checks = true
 explicit_package_bases = true
 exclude = ["^tests/", "^\\.venv/"]
 
 [[tool.mypy.overrides]]
-module = ["aiohttp.*"]
+module = ["aiohttp.*", "rich.*"]
 ignore_missing_imports = true
