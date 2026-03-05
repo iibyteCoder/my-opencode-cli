@@ -1,0 +1,88 @@
+[project]
+name = "opencode-client"
+version = "0.1.0"
+description = "A Python client library for OpenCode server"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "aiohttp>=3.9.0",
+  "rich>=13.0.0",
+  "pydantic>=2.0.0",
+  "pydantic-settings>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.23.0",
+  "ruff>=0.7.0",
+  "mypy>=1.11.0",
+]
+
+[project.scripts]
+opencode-client = "opencode_client.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
+
+# 国内镜像源配置
+[[tool.uv.index]]
+name = "tuna"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+  "E",     # pycodestyle errors
+  "F",     # pyflakes
+  "I",     # isort
+  "N",     # pep8-naming
+  "W",     # pycodestyle warnings
+  "UP",    # pyupgrade
+  "ASYNC", # flake8-async
+  "S",     # flake8-bandit (security)
+  "B",     # flake8-bugbear
+  "C4",    # flake8-comprehensions
+  "T20",   # flake8-print
+  "SIM",   # flake8-simplify
+  "RUF",   # ruff-specific rules
+]
+ignore = [
+  "E501",   # line length handled by formatter
+  "S101",   # allow assert
+  "T201",   # allow print
+  "RUF001", # allow Chinese characters in strings
+  "RUF002", # allow Chinese punctuation in docstrings
+  "RUF003", # allow Chinese punctuation in comments
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["opencode_client"]
+required-imports = ["from __future__ import annotations"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = ["--strict-markers"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+explicit_package_bases = true
+exclude = ["^tests/", "^\\.venv/"]
+
+[[tool.mypy.overrides]]
+module = ["aiohttp.*"]
+ignore_missing_imports = true
