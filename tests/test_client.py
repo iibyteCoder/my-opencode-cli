@@ -7,12 +7,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from opencode_client.client.async_client import AsyncOpenCode
-from opencode_client.client.sync_client import OpenCode
-from opencode_client.core.config import ClientConfig
-from opencode_client.core.errors import ConnectionError
-from opencode_client.models.event import TextEvent, DoneEvent
-from opencode_client.models.session import Session
+from my_opencode_cli.client.async_client import AsyncOpenCode
+from my_opencode_cli.client.sync_client import OpenCode
+from my_opencode_cli.core.config import ClientConfig
+from my_opencode_cli.core.errors import ConnectionError
+from my_opencode_cli.models.event import TextEvent, DoneEvent
+from my_opencode_cli.models.session import Session
 
 
 # =============================================================================

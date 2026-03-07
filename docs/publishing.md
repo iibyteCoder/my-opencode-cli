@@ -1,6 +1,6 @@
 # 发布指南
 
-本文档介绍如何将 opencode-client 发布到 PyPI。
+本文档介绍如何将 my-opencode-cli 发布到 PyPI。
 
 ## 前置准备
 
@@ -154,11 +154,11 @@ jobs:
 
 ```bash
 # 从 PyPI 安装
-pip install opencode-client
+pip install my-opencode-cli
 
 # 或使用 uv
-uv add opencode-client
+uv add my-opencode-cli
 
 # 验证
-python -c "from opencode_client import AsyncOpenCode; print('OK')"
+python -c "from my_opencode_cli import AsyncOpenCode; print('OK')"
 ```

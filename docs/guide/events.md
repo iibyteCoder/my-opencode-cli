@@ -20,7 +20,7 @@ OpenCode 使用 Server-Sent Events (SSE) 推送实时事件。本文档介绍如
 所有事件都继承自 `OpenCodeModel`：
 
 ```python
-from opencode_client.models import (
+from my_opencode_cli.models import (
     Event,                    # 联合类型（所有事件）
     ServerConnectedEvent,     # 服务器连接
     MessageUpdatedEvent,      # 消息更新
@@ -37,7 +37,7 @@ from opencode_client.models import (
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def main():
     async with AsyncOpenCode(start_server=True) as client:
@@ -188,7 +188,7 @@ async def ask_with_timeout(client, prompt, timeout=30.0):
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def chat():
     async with AsyncOpenCode(start_server=True) as client:
@@ -223,7 +223,7 @@ asyncio.run(chat())
 import asyncio
 import json
 from datetime import datetime
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def log_events():
     async with AsyncOpenCode(start_server=True) as client:

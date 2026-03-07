@@ -8,15 +8,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from opencode_client.api.agent import AgentAPI
-from opencode_client.api.file import FileAPI
-from opencode_client.api.message import MessageAPI
-from opencode_client.api.project import ProjectAPI
-from opencode_client.api.search import SearchAPI
-from opencode_client.api.session import SessionAPI
-from opencode_client.models.event import TextEvent, DoneEvent
-from opencode_client.models.session import Session, SessionCreate, SessionUpdate
-from opencode_client.transport.http import HTTPTransport
+from my_opencode_cli.api.agent import AgentAPI
+from my_opencode_cli.api.file import FileAPI
+from my_opencode_cli.api.message import MessageAPI
+from my_opencode_cli.api.project import ProjectAPI
+from my_opencode_cli.api.search import SearchAPI
+from my_opencode_cli.api.session import SessionAPI
+from my_opencode_cli.models.event import TextEvent, DoneEvent
+from my_opencode_cli.models.session import Session, SessionCreate, SessionUpdate
+from my_opencode_cli.transport.http import HTTPTransport
 
 
 # =============================================================================

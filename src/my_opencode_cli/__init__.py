@@ -3,14 +3,14 @@
 一个用于与 OpenCode 服务器交互的 Python 客户端库。
 
 Example:
-    from opencode_client import AsyncOpenCode
+    from my_opencode_cli import AsyncOpenCode
 
     async with AsyncOpenCode(base_url="http://localhost:4096") as client:
         answer = await client.ask("什么是 Python 装饰器？")
         print(answer)
 
     # 或者使用同步客户端
-    from opencode_client import OpenCode
+    from my_opencode_cli import OpenCode
 
     with OpenCode(base_url="http://localhost:4096") as client:
         answer = client.ask("什么是闭包？")

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from opencode_client.core.config import ClientConfig
-from opencode_client.core.errors import (
+from my_opencode_cli.core.config import ClientConfig
+from my_opencode_cli.core.errors import (
     APIError,
     ConnectionError,
     MessageError,

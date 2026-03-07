@@ -7,7 +7,7 @@
 ### 初始化
 
 ```python
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 # 方式 1: 连接到已有服务器
 client = AsyncOpenCode(base_url="http://localhost:4096")
@@ -16,7 +16,7 @@ client = AsyncOpenCode(base_url="http://localhost:4096")
 client = AsyncOpenCode(start_server=True)
 
 # 方式 3: 使用配置
-from opencode_client import ClientConfig
+from my_opencode_cli import ClientConfig
 
 config = ClientConfig(
     server_port=4096,
@@ -121,7 +121,7 @@ async for event in client.event.subscribe():
 ### 初始化
 
 ```python
-from opencode_client import OpenCode
+from my_opencode_cli import OpenCode
 
 # 方式 1: 连接到已有服务器
 client = OpenCode(base_url="http://localhost:4096")
@@ -226,7 +226,7 @@ async with AsyncOpenCode(start_server=True) as client:
 ### 错误处理
 
 ```python
-from opencode_client import AsyncOpenCode, ConnectionError, APIError
+from my_opencode_cli import AsyncOpenCode, ConnectionError, APIError
 
 try:
     async with AsyncOpenCode(start_server=True) as client:

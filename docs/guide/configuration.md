@@ -5,7 +5,7 @@
 ## ClientConfig
 
 ```python
-from opencode_client import ClientConfig
+from my_opencode_cli import ClientConfig
 
 config = ClientConfig(
     # 服务器配置
@@ -48,7 +48,7 @@ config = ClientConfig(
 ### 传递给客户端
 
 ```python
-from opencode_client import AsyncOpenCode, ClientConfig
+from my_opencode_cli import AsyncOpenCode, ClientConfig
 
 # 方式 1: 构造函数
 config = ClientConfig(server_port=4097, cleanup_sessions=True)
@@ -117,7 +117,7 @@ python your_script.py
 ## 完整配置示例
 
 ```python
-from opencode_client import AsyncOpenCode, ClientConfig
+from my_opencode_cli import AsyncOpenCode, ClientConfig
 
 async def main():
     config = ClientConfig(

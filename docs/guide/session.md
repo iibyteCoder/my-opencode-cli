@@ -14,7 +14,7 @@
 ### 使用便捷方法
 
 ```python
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async with AsyncOpenCode(start_server=True) as client:
     # 创建简单会话
@@ -34,7 +34,7 @@ async with AsyncOpenCode(start_server=True) as client:
 ### 使用 Session API
 
 ```python
-from opencode_client import AsyncOpenCode, SessionCreate
+from my_opencode_cli import AsyncOpenCode, SessionCreate
 
 async with AsyncOpenCode(start_server=True) as client:
     request = SessionCreate(title="我的会话")
@@ -80,7 +80,7 @@ for child in children:
 ## 更新会话
 
 ```python
-from opencode_client import AsyncOpenCode, SessionUpdate
+from my_opencode_cli import AsyncOpenCode, SessionUpdate
 
 async with AsyncOpenCode(start_server=True) as client:
     # 更新标题
@@ -106,7 +106,7 @@ if result:
 ### Session
 
 ```python
-from opencode_client.models import Session
+from my_opencode_cli.models import Session
 
 session = await client.session.get(session_id)
 
@@ -124,7 +124,7 @@ session.path         # 会话路径
 创建会话的请求模型：
 
 ```python
-from opencode_client.models import SessionCreate
+from my_opencode_cli.models import SessionCreate
 
 request = SessionCreate(
     title="我的会话",
@@ -137,7 +137,7 @@ request = SessionCreate(
 更新会话的请求模型：
 
 ```python
-from opencode_client.models import SessionUpdate
+from my_opencode_cli.models import SessionUpdate
 
 request = SessionUpdate(
     title="新标题",
@@ -205,7 +205,7 @@ async with AsyncOpenCode(start_server=True) as client:
 使用配置自动清理临时会话：
 
 ```python
-from opencode_client import AsyncOpenCode, ClientConfig
+from my_opencode_cli import AsyncOpenCode, ClientConfig
 
 # ask/ask_stream 创建的会话会自动清理
 config = ClientConfig(cleanup_sessions=True)
@@ -221,7 +221,7 @@ async with AsyncOpenCode(start_server=True, config=config) as client:
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def session_manager():
     async with AsyncOpenCode(start_server=True) as client:

@@ -61,7 +61,7 @@ OpenCode Python Client 是一个现代化的 Python 客户端库，用于与 [Op
 
 ```python
 # 最简单的使用方式
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async with AsyncOpenCode(start_server=True) as client:
     answer = await client.ask("什么是 Python 装饰器？")
@@ -73,4 +73,4 @@ async with AsyncOpenCode(start_server=True) as client:
 - [OpenCode 官网](https://opencode.ai)
 - [OpenCode API 文档](../opencode/)
 - [开发规范](../coding-standards.md)
-- [GitHub 仓库](https://github.com/example/opencode-client)
+- [GitHub 仓库](https://github.com/example/my-opencode-cli)

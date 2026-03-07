@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from opencode_client.transport.sse import SSEParser, parse_sse_stream
+from my_opencode_cli.transport.sse import SSEParser, parse_sse_stream
 
 
 def make_mock_response(lines: list[bytes]) -> MagicMock:

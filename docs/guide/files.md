@@ -16,7 +16,7 @@
 列出目录中的文件和子目录：
 
 ```python
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async with AsyncOpenCode(start_server=True) as client:
     # 列出当前目录
@@ -29,7 +29,7 @@ async with AsyncOpenCode(start_server=True) as client:
 ### FileInfo 模型
 
 ```python
-from opencode_client.models import FileInfo
+from my_opencode_cli.models import FileInfo
 
 # FileInfo 属性
 file.name      # 文件名
@@ -57,7 +57,7 @@ async with AsyncOpenCode(start_server=True) as client:
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def browse_directory(path="."):
     async with AsyncOpenCode(start_server=True) as client:
@@ -85,7 +85,7 @@ asyncio.run(browse_directory("src"))
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def check_project_status():
     async with AsyncOpenCode(start_server=True) as client:

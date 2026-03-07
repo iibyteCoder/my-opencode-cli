@@ -15,7 +15,7 @@
 获取完整响应：
 
 ```python
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async with AsyncOpenCode(start_server=True) as client:
     # 简单提问
@@ -176,7 +176,7 @@ response = await client.message.send(session_id, "Hello")
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def chat_loop():
     async with AsyncOpenCode(start_server=True) as client:
@@ -209,7 +209,7 @@ asyncio.run(chat_loop())
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def batch_questions(questions):
     async with AsyncOpenCode(start_server=True) as client:

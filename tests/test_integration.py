@@ -19,15 +19,15 @@ from typing import Any
 
 import pytest
 
-from opencode_client.client.async_client import AsyncOpenCode
-from opencode_client.client.sync_client import OpenCode
-from opencode_client.core.config import ClientConfig
-from opencode_client.models.event import (
+from my_opencode_cli.client.async_client import AsyncOpenCode
+from my_opencode_cli.client.sync_client import OpenCode
+from my_opencode_cli.core.config import ClientConfig
+from my_opencode_cli.models.event import (
     MessagePartUpdatedEvent,
     SessionStatusEvent,
 )
-from opencode_client.models.message import MessageContent
-from opencode_client.models.session import Session, SessionCreate, SessionUpdate
+from my_opencode_cli.models.message import MessageContent
+from my_opencode_cli.models.session import Session, SessionCreate, SessionUpdate
 
 
 # 检查是否安装了 opencode 命令
@@ -417,7 +417,7 @@ class TestErrorHandlingE2E:
     @pytest.mark.asyncio
     async def test_invalid_session_id(self) -> None:
         """测试无效会话 ID。 """
-        from opencode_client.core.errors import APIError
+        from my_opencode_cli.core.errors import APIError
 
         config = ClientConfig(server_port=4112, startup_timeout=60.0)
         async with AsyncOpenCode(start_server=True, config=config) as client:
@@ -459,7 +459,7 @@ class TestErrorHandlingE2E:
 async def test_e2e_tests_disabled_when_no_opencode() -> None:
     """E2E 测试未启用时的占位测试。 """
     if not OPENCODE_INSTALLED:
-        from opencode_client.core.config import ClientConfig
+        from my_opencode_cli.core.config import ClientConfig
 
         config = ClientConfig()
         assert config.server_port == 4096

@@ -21,7 +21,7 @@ OpenCodeError (基类)
 所有异常的基类：
 
 ```python
-from opencode_client import OpenCodeError
+from my_opencode_cli import OpenCodeError
 
 try:
     async with AsyncOpenCode(start_server=True) as client:
@@ -35,7 +35,7 @@ except OpenCodeError as e:
 连接服务器失败：
 
 ```python
-from opencode_client import ConnectionError
+from my_opencode_cli import ConnectionError
 
 try:
     async with AsyncOpenCode(base_url="http://invalid:4096") as client:
@@ -49,7 +49,7 @@ except ConnectionError as e:
 自动启动服务器失败：
 
 ```python
-from opencode_client import ServerStartError
+from my_opencode_cli import ServerStartError
 
 try:
     async with AsyncOpenCode(start_server=True) as client:
@@ -64,7 +64,7 @@ except ServerStartError as e:
 API 调用返回错误：
 
 ```python
-from opencode_client import APIError
+from my_opencode_cli import APIError
 
 try:
     session = await client.session.get("invalid-id")
@@ -77,7 +77,7 @@ except APIError as e:
 请求超时：
 
 ```python
-from opencode_client import TimeoutError
+from my_opencode_cli import TimeoutError
 
 try:
     async with asyncio.timeout(5.0):
@@ -91,7 +91,7 @@ except TimeoutError as e:
 ### 基本错误处理
 
 ```python
-from opencode_client import (
+from my_opencode_cli import (
     AsyncOpenCode,
     OpenCodeError,
     ConnectionError,
@@ -117,7 +117,7 @@ async def safe_ask(prompt):
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode, ConnectionError, APIError
+from my_opencode_cli import AsyncOpenCode, ConnectionError, APIError
 
 async def ask_with_retry(prompt, max_retries=3):
     for attempt in range(max_retries):
@@ -135,7 +135,7 @@ async def ask_with_retry(prompt, max_retries=3):
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def ask_with_timeout(prompt, timeout=30.0):
     async with AsyncOpenCode(start_server=True) as client:
@@ -150,7 +150,7 @@ async def ask_with_timeout(prompt, timeout=30.0):
 ### 会话不存在处理
 
 ```python
-from opencode_client import AsyncOpenCode, APIError
+from my_opencode_cli import AsyncOpenCode, APIError
 
 async def get_or_create_session(client, session_id=None, title="新会话"):
     if session_id:
@@ -165,7 +165,7 @@ async def get_or_create_session(client, session_id=None, title="新会话"):
 
 ```python
 import asyncio
-from opencode_client import (
+from my_opencode_cli import (
     AsyncOpenCode,
     OpenCodeError,
     ConnectionError,

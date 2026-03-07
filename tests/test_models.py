@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from opencode_client.models.session import Session, SessionCreate, SessionUpdate
-from opencode_client.models.message import TextPart, MessageContent
-from opencode_client.models.event import TextEvent, DoneEvent, SSEEvent
+from my_opencode_cli.models.session import Session, SessionCreate, SessionUpdate
+from my_opencode_cli.models.message import TextPart, MessageContent
+from my_opencode_cli.models.event import TextEvent, DoneEvent, SSEEventBase
 
 
 class TestSessionModels:
@@ -72,7 +72,7 @@ class TestEventModels:
         assert event.type == "done"
 
     def test_sse_event(self):
-        """测试 SSEEvent 基类。"""
-        event = SSEEvent(type="custom", data={"key": "value"})
+        """测试 SSEEventBase 基类。"""
+        event = SSEEventBase(type="custom", data={"key": "value"})
         assert event.type == "custom"
         assert event.data == {"key": "value"}

@@ -18,7 +18,7 @@ pip install my-opencode-cli
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def main():
     async with AsyncOpenCode(start_server=True) as client:
@@ -39,7 +39,7 @@ asyncio.run(main())
 同步客户端：
 
 ```python
-from opencode_client import OpenCode
+from my_opencode_cli import OpenCode
 
 with OpenCode(start_server=True) as client:
     print(client.ask("什么是闭包？"))

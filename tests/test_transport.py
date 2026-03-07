@@ -10,8 +10,8 @@ from typing import Any
 import pytest
 from aiohttp import web
 
-from opencode_client.core.errors import APIError, ConnectionError
-from opencode_client.transport.http import HTTPTransport
+from my_opencode_cli.core.errors import APIError, ConnectionError
+from my_opencode_cli.transport.http import HTTPTransport
 
 
 # =============================================================================

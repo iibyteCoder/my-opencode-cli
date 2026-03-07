@@ -76,8 +76,8 @@ uv sync --all-extras
 ### 基本验证
 
 ```python
-from opencode_client import AsyncOpenCode, OpenCode
-from opencode_client.models import Session, Event
+from my_opencode_cli import AsyncOpenCode, OpenCode
+from my_opencode_cli.models import Session, Event
 
 print("安装成功！")
 ```
@@ -86,7 +86,7 @@ print("安装成功！")
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def test_connection():
     async with AsyncOpenCode(base_url="http://localhost:4096") as client:
@@ -99,7 +99,7 @@ asyncio.run(test_connection())
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def test_with_server():
     # 自动启动本地服务器

@@ -10,7 +10,7 @@
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def main():
     # 自动启动服务器并提问
@@ -27,7 +27,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def main():
     async with AsyncOpenCode(start_server=True) as client:
@@ -46,7 +46,7 @@ asyncio.run(main())
 如果你不使用 asyncio，可以使用同步客户端：
 
 ```python
-from opencode_client import OpenCode
+from my_opencode_cli import OpenCode
 
 with OpenCode(start_server=True) as client:
     answer = client.ask("什么是闭包？")
@@ -60,7 +60,7 @@ with OpenCode(start_server=True) as client:
 如果 OpenCode 服务器已经在运行：
 
 ```python
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async with AsyncOpenCode(base_url="http://localhost:4096") as client:
     answer = await client.ask("Hello")
@@ -69,7 +69,7 @@ async with AsyncOpenCode(base_url="http://localhost:4096") as client:
 ### 连接到远程服务器
 
 ```python
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async with AsyncOpenCode(base_url="http://remote-server:4096") as client:
     answer = await client.ask("Hello")
@@ -78,7 +78,7 @@ async with AsyncOpenCode(base_url="http://remote-server:4096") as client:
 ### 自动启动本地服务器
 
 ```python
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 # 自动启动、使用、关闭服务器
 async with AsyncOpenCode(start_server=True) as client:
@@ -91,7 +91,7 @@ async with AsyncOpenCode(start_server=True) as client:
 在发送消息时指定模型：
 
 ```python
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async with AsyncOpenCode(start_server=True) as client:
     answer = await client.ask(
@@ -106,7 +106,7 @@ async with AsyncOpenCode(start_server=True) as client:
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def main():
     async with AsyncOpenCode(start_server=True) as client:
@@ -135,7 +135,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from opencode_client import AsyncOpenCode
+from my_opencode_cli import AsyncOpenCode
 
 async def main():
     async with AsyncOpenCode(start_server=True) as client:
