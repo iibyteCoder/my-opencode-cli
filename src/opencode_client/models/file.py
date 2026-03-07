@@ -41,9 +41,14 @@ class FileInfo(OpenCodeModel):
 
     path: str = Field(..., description="文件路径")
     lines: str = Field(default="", description="匹配的行内容")
-    line_number: int = Field(default=0, ge=0, alias="line_number")
+    line: int = Field(default=0, ge=0, description="行号")
     absolute_offset: int = Field(default=0, description="绝对偏移量")
     submatches: list[dict[str, Any]] = Field(default_factory=list, description="子匹配")
+
+    @property
+    def content(self) -> str:
+        """内容别名，返回 lines。"""
+        return self.lines
 
 
 class FileStatus(OpenCodeModel):

@@ -14,13 +14,13 @@ class SessionAPI(APIClient):
     根据 OpenCode API 文档，提供会话的完整管理功能。
     """
 
-    async def list(self) -> list[Session]:
+    async def list_all(self) -> list[Session]:
         """列出所有会话。
 
         Returns:
             会话列表
         """
-        data: list[dict[str, Any]] = await self._get("/session")
+        data = await self._get("/session")
         return [Session.model_validate(item) for item in data]
 
     async def create(self, request: SessionCreate | None = None) -> Session:
@@ -34,8 +34,8 @@ class SessionAPI(APIClient):
         Returns:
             创建的会话
         """
-        body: dict[str, Any] = request.model_dump(exclude_none=True) if request else {}
-        data: dict[str, Any] = await self._post("/session", json=body)
+        body = request.model_dump(exclude_none=True) if request else {}
+        data = await self._post("/session", json=body)
         return Session.model_validate(data)
 
     async def get(self, session_id: str) -> Session:
@@ -47,7 +47,7 @@ class SessionAPI(APIClient):
         Returns:
             会话信息
         """
-        data: dict[str, Any] = await self._get(f"/session/{session_id}")
+        data = await self._get(f"/session/{session_id}")
         return Session.model_validate(data)
 
     async def update(self, session_id: str, request: SessionUpdate) -> Session:
@@ -60,8 +60,8 @@ class SessionAPI(APIClient):
         Returns:
             更新后的会话
         """
-        body: dict[str, Any] = request.model_dump(exclude_none=True)
-        data: dict[str, Any] = await self._patch(f"/session/{session_id}", json=body)
+        body = request.model_dump(exclude_none=True)
+        data = await self._patch(f"/session/{session_id}", json=body)
         return Session.model_validate(data)
 
     async def delete(self, session_id: str) -> bool:
@@ -103,7 +103,7 @@ class SessionAPI(APIClient):
         Returns:
             子会话列表
         """
-        data: list[dict[str, Any]] = await self._get(f"/session/{session_id}/children")
+        data = await self._get(f"/session/{session_id}/children")
         return [Session.model_validate(item) for item in data]
 
     async def abort(self, session_id: str) -> bool:
@@ -134,7 +134,7 @@ class SessionAPI(APIClient):
         body: dict[str, Any] = {}
         if message_id is not None:
             body["messageID"] = message_id
-        data: dict[str, Any] = await self._post(f"/session/{session_id}/fork", json=body)
+        data = await self._post(f"/session/{session_id}/fork", json=body)
         return Session.model_validate(data)
 
     async def share(self, session_id: str) -> Session:
@@ -146,7 +146,7 @@ class SessionAPI(APIClient):
         Returns:
             更新后的会话
         """
-        data: dict[str, Any] = await self._post(f"/session/{session_id}/share")
+        data = await self._post(f"/session/{session_id}/share")
         return Session.model_validate(data)
 
     async def unshare(self, session_id: str) -> Session:
@@ -158,5 +158,5 @@ class SessionAPI(APIClient):
         Returns:
             更新后的会话
         """
-        data: dict[str, Any] = await self._delete(f"/session/{session_id}/share")
+        data = await self._delete(f"/session/{session_id}/share")
         return Session.model_validate(data)

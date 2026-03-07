@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, cast
 
-from ..models.event import DoneEvent, ErrorEvent, SSEEvent, TextEvent, ToolResultEvent, ToolUseEvent
 from ..models.message import MessageContent
 from .client import APIClient
 
@@ -15,36 +13,14 @@ class MessageAPI(APIClient):
 
     根据 OpenCode API 文档提供消息相关功能：
     - GET /session/:id/message - 列出消息
-    - POST /session/:id/message - 发送消息并等待响应
+    - POST /session/:id/message - 发送消息并等待响应（同步）
     - GET /session/:id/message/:messageID - 获取消息详情
     - POST /session/:id/prompt_async - 异步发送消息（不等待响应）
     - POST /session/:id/command - 执行斜杠命令
     - POST /session/:id/shell - 运行 shell 命令
+
+    注意：流式事件通过 EventAPI 的 /event 端点获取。
     """
-
-    async def list(
-        self,
-        session_id: str,
-        *,
-        limit: int | None = None,
-    ) -> list[dict[str, Any]]:
-        """列出会话中的消息。
-
-        Args:
-            session_id: 会话 ID
-            limit: 返回消息数量限制（可选）
-
-        Returns:
-            消息列表，每条消息包含 info 和 parts
-        """
-        params: dict[str, Any] = {}
-        if limit is not None:
-            params["limit"] = limit
-        data: list[dict[str, Any]] = await self._get(
-            f"/session/{session_id}/message",
-            params=params if params else None,
-        )
-        return data
 
     async def send(
         self,
@@ -56,8 +32,8 @@ class MessageAPI(APIClient):
         no_reply: bool = False,
         system: str | None = None,
         tools: dict[str, Any] | None = None,
-    ) -> list[SSEEvent]:
-        """发送消息并收集所有事件。
+    ) -> dict[str, Any]:
+        """发送消息并等待响应（同步）。
 
         Args:
             session_id: 会话 ID
@@ -71,45 +47,7 @@ class MessageAPI(APIClient):
             tools: 工具配置（可选）
 
         Returns:
-            事件列表
-        """
-        events: list[SSEEvent] = []
-        async for event in self.stream(
-            session_id,
-            content,
-            model=model,
-            agent=agent,
-            no_reply=no_reply,
-            system=system,
-            tools=tools,
-        ):
-            events.append(event)
-        return events
-
-    async def stream(
-        self,
-        session_id: str,
-        content: str | MessageContent,
-        *,
-        model: str | dict[str, str] | None = None,
-        agent: str | None = None,
-        no_reply: bool = False,
-        system: str | None = None,
-        tools: dict[str, Any] | None = None,
-    ) -> AsyncIterator[SSEEvent]:
-        """发送消息并流式返回事件。
-
-        Args:
-            session_id: 会话 ID
-            content: 消息内容（字符串或 MessageContent 对象）
-            model: 指定的模型（可选）
-            agent: 指定的代理名称（可选）
-            no_reply: 是否不触发 AI 响应
-            system: 系统提示（可选）
-            tools: 工具配置（可选）
-
-        Yields:
-            SSE 事件
+            消息响应，包含 info 和 parts
         """
         # 规范化消息内容
         if isinstance(content, str):
@@ -140,12 +78,33 @@ class MessageAPI(APIClient):
         if tools is not None:
             body["tools"] = tools
 
-        # 流式处理响应
-        async for event_data in self._stream(
+        # 发送同步请求
+        data = await self._post(f"/session/{session_id}/message", json=body)
+        return cast(dict[str, Any], data)
+
+    async def list_messages(
+        self,
+        session_id: str,
+        *,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """列出会话中的消息。
+
+        Args:
+            session_id: 会话 ID
+            limit: 返回消息数量限制（可选）
+
+        Returns:
+            消息列表，每条消息包含 info 和 parts
+        """
+        params: dict[str, Any] = {}
+        if limit is not None:
+            params["limit"] = limit
+        data = await self._get(
             f"/session/{session_id}/message",
-            json=body,
-        ):
-            yield self._parse_event(event_data)
+            params=params if params else None,
+        )
+        return cast(list[dict[str, Any]], data)
 
     async def get(self, session_id: str, message_id: str) -> dict[str, Any]:
         """获取消息详情。
@@ -157,8 +116,8 @@ class MessageAPI(APIClient):
         Returns:
             消息详情，包含 info 和 parts
         """
-        data: dict[str, Any] = await self._get(f"/session/{session_id}/message/{message_id}")
-        return data
+        data = await self._get(f"/session/{session_id}/message/{message_id}")
+        return cast(dict[str, Any], data)
 
     async def send_async(
         self,
@@ -286,28 +245,3 @@ class MessageAPI(APIClient):
 
         data: dict[str, Any] = await self._post(f"/session/{session_id}/shell", json=body)
         return data
-
-    def _parse_event(self, data: dict[str, Any]) -> SSEEvent:
-        """解析 SSE 事件数据。
-
-        Args:
-            data: 原始事件数据
-
-        Returns:
-            解析后的事件对象
-        """
-        event_type = data.get("type", "unknown")
-
-        # 根据类型分发到对应的事件类
-        if event_type == "text":
-            return TextEvent.model_validate(data)
-        elif event_type == "tool_use":
-            return ToolUseEvent.model_validate(data)
-        elif event_type == "tool_result":
-            return ToolResultEvent.model_validate(data)
-        elif event_type == "error":
-            return ErrorEvent.model_validate(data)
-        elif event_type == "done":
-            return DoneEvent.model_validate(data)
-        else:
-            return SSEEvent.model_validate(data)

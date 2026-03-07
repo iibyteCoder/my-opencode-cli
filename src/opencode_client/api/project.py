@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from ..models.config import OpenCodeConfig
 from .client import APIClient
@@ -38,5 +38,7 @@ class ProjectAPI(APIClient):
         Returns:
             项目根目录路径
         """
-        data: dict[str, Any] = await self._get("/project/root")
-        return data.get("root", "")
+        data = await self._get("/project/root")
+        result = cast(dict[str, Any], data)
+        root_value: str = result.get("root", "")
+        return root_value

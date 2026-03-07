@@ -156,7 +156,7 @@ def list_sessions(ctx: click.Context) -> None:
 
     async def _list() -> None:
         async with AsyncOpenCode(base_url=base_url) as client:
-            sessions = await client.session.list()
+            sessions = await client.session.list_all()
             if not sessions:
                 console.print("[yellow]没有找到任何会话[/yellow]")
                 return
@@ -170,21 +170,19 @@ def list_sessions(ctx: click.Context) -> None:
 
 @session.command("create")
 @click.option("--title", "-t", default=None, help="会话标题")
-@click.option("--model", "-m", default=None, help="默认模型")
 @click.pass_context
 def create_session_cmd(
     ctx: click.Context,
     title: str | None,
-    model: str | None,
 ) -> None:
     """创建新会话。"""
     base_url: str | None = ctx.obj["base_url"]
 
     async def _create() -> None:
         async with AsyncOpenCode(base_url=base_url) as client:
-            request = SessionCreate(title=title, model=model)
-            session_obj = await client.session.create(request)
-            console.print(f"[green]Created session:[/] {session_obj.id}")
+                request = SessionCreate(title=title)
+                session_obj = await client.session.create(request)
+                console.print(f"[green]Created session:[/] {session_obj.id}")
 
     asyncio.run(_create())
 

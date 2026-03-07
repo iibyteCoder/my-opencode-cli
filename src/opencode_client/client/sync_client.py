@@ -7,7 +7,7 @@ from concurrent.futures import Future
 from typing import Any, Self
 
 from ..core.config import ClientConfig
-from ..models.event import SSEEvent
+from ..models.event import Event
 from ..models.session import Session
 from .async_client import AsyncOpenCode
 
@@ -46,33 +46,24 @@ class OpenCode:
         self._owned_loop: bool = False
 
     def _run(self, coro: Any) -> Any:
-        """在事件循环中运行协程。
-
-        Args:
-            coro: 要运行的协程对象
-
-        Returns:
-            协程的返回值
-        """
-        try:
-            # 尝试获取当前运行的事件循环
-            loop = asyncio.get_running_loop()
-            # 如果已经在异步上下文中，使用 run_coroutine_threadsafe
-            future: Future[Any] = asyncio.run_coroutine_threadsafe(coro, loop)
-            return future.result()
-        except RuntimeError:
-            # 没有运行的事件循环，创建新的
-            if self._loop is None or self._loop.is_closed():
+        """在事件循环中运行协程。"""
+        if self._loop is None or self._loop.is_closed():
+            try:
+                self._loop = asyncio.get_running_loop()
+                self._owned_loop = False
+            except RuntimeError:
                 self._loop = asyncio.new_event_loop()
                 self._owned_loop = True
+
+        if self._owned_loop:
             return self._loop.run_until_complete(coro)
+        else:
+            # 已有运行中的循环，使用 run_coroutine_threadsafe
+            future: Future[Any] = asyncio.run_coroutine_threadsafe(coro, self._loop)
+            return future.result()
 
     def connect(self) -> Self:
-        """连接到 OpenCode 服务器。
-
-        Returns:
-            返回自身以支持链式调用
-        """
+        """连接到 OpenCode 服务器。"""
         self._run(self._async_client.connect())
         return self
 
@@ -80,11 +71,9 @@ class OpenCode:
         """断开与 OpenCode 服务器的连接。"""
         self._run(self._async_client.disconnect())
 
-        # 关闭自己创建的事件循环
-        if self._owned_loop and self._loop is not None:
+        if self._owned_loop and self._loop:
             self._loop.close()
             self._loop = None
-            self._owned_loop = False
 
     def __enter__(self) -> Self:
         """上下文管理器入口。"""
@@ -110,21 +99,30 @@ class OpenCode:
         model: str | None = None,
         agent: str | None = None,
         session_id: str | None = None,
+        title: str | None = None,
     ) -> str:
-        """快速提问。
+        """快速提问（同步模式，等待完整响应）。
 
         Args:
             prompt: 问题内容
-            model: 指定的模型（可选）
+            model: 指定的模型（可选，格式: "provider/model-id"）
             agent: 指定的代理（可选）
-            session_id: 复用的会话 ID（可选）
+            session_id: 复用的会话 ID（可选，默认创建新会话）
+            title: 新会话的标题（可选，仅当创建新会话时使用）
 
         Returns:
             AI 的回复文本
         """
-        return self._run(
-            self._async_client.ask(prompt, model=model, agent=agent, session_id=session_id)
+        result: str = self._run(
+            self._async_client.ask(
+                prompt,
+                model=model,
+                agent=agent,
+                session_id=session_id,
+                title=title,
+            )
         )
+        return result
 
     def ask_stream(
         self,
@@ -133,31 +131,37 @@ class OpenCode:
         model: str | None = None,
         agent: str | None = None,
         session_id: str | None = None,
-    ) -> list[SSEEvent]:
+        title: str | None = None,
+    ) -> list[Event]:
         """流式提问（收集所有事件后返回）。
 
-        注意：这是同步方法，会等待所有事件收集完毕后返回。
-        如需真正的流式处理，请使用异步客户端。
+        注意：同步客户端会收集所有事件后一次性返回。
+        如需实时处理事件，请使用 AsyncOpenCode。
 
         Args:
             prompt: 问题内容
-            model: 指定的模型（可选）
+            model: 指定的模型（可选，格式: "provider/model-id"）
             agent: 指定的代理（可选）
             session_id: 复用的会话 ID（可选）
+            title: 新会话的标题（可选，仅当创建新会话时使用）
 
         Returns:
-            所有事件的列表
+            事件列表
         """
+        events: list[Event] = []
 
-        async def _collect() -> list[SSEEvent]:
-            events: list[SSEEvent] = []
+        async def collect_events() -> None:
             async for event in self._async_client.ask_stream(
-                prompt, model=model, agent=agent, session_id=session_id
+                prompt,
+                model=model,
+                agent=agent,
+                session_id=session_id,
+                title=title,
             ):
                 events.append(event)
-            return events
 
-        return self._run(_collect())
+        self._run(collect_events())
+        return events
 
     def create_session(
         self,
@@ -177,7 +181,8 @@ class OpenCode:
         Returns:
             创建的会话对象
         """
-        return self._run(self._async_client.create_session(title, parent_id=parent_id))
+        result: Session = self._run(self._async_client.create_session(title, parent_id=parent_id))
+        return result
 
     # =========================================================================
     # 代理属性访问
@@ -202,6 +207,11 @@ class OpenCode:
     def project(self) -> Any:
         """获取项目 API。"""
         return self._async_client.project
+
+    @property
+    def event(self) -> Any:
+        """获取事件 API。"""
+        return self._async_client.event
 
     @property
     def is_connected(self) -> bool:

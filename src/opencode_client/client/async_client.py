@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Self
+from typing import Any, Self
 
 from ..api.agent import AgentAPI
+from ..api.event import EventAPI
 from ..api.file import FileAPI
 from ..api.message import MessageAPI
 from ..api.project import ProjectAPI
@@ -14,7 +16,10 @@ from ..api.search import SearchAPI
 from ..api.session import SessionAPI
 from ..core.config import ClientConfig
 from ..core.errors import ConnectionError
-from ..models.event import SSEEvent, TextEvent
+from ..models.event import (
+    Event,
+    SessionStatusEvent,
+)
 from ..models.session import Session, SessionCreate
 from ..transport.http import HTTPTransport
 from ..transport.process import ServerProcess
@@ -63,6 +68,7 @@ class AsyncOpenCode:
         self._project_api: ProjectAPI | None = None
         self._agent_api: AgentAPI | None = None
         self._search_api: SearchAPI | None = None
+        self._event_api: EventAPI | None = None
 
     # =========================================================================
     # 属性访问器（惰性初始化）
@@ -115,6 +121,13 @@ class AsyncOpenCode:
         return self._search_api
 
     @property
+    def event(self) -> EventAPI:
+        """获取事件 API。"""
+        if self._event_api is None:
+            raise ConnectionError("客户端未连接，请先调用 connect()")
+        return self._event_api
+
+    @property
     def is_connected(self) -> bool:
         """检查是否已连接。"""
         return self._transport is not None
@@ -158,11 +171,20 @@ class AsyncOpenCode:
         self._project_api = ProjectAPI(self._transport)
         self._agent_api = AgentAPI(self._transport)
         self._search_api = SearchAPI(self._transport)
+        self._event_api = EventAPI(
+            base_url=self._base_url,
+            timeout=float(self._config.request_timeout),
+        )
 
         return self
 
     async def disconnect(self) -> None:
         """断开与 OpenCode 服务器的连接。"""
+        # 关闭 EventAPI 的会话
+        if self._event_api is not None:
+            await self._event_api.close()
+            self._event_api = None
+
         # 关闭传输层
         if self._transport is not None:
             await self._transport.close()
@@ -207,7 +229,7 @@ class AsyncOpenCode:
         session_id: str | None = None,
         title: str | None = None,
     ) -> str:
-        """快速提问（自动管理会话）。
+        """快速提问（同步模式，等待完整响应）。
 
         Args:
             prompt: 问题内容
@@ -223,12 +245,12 @@ class AsyncOpenCode:
             answer = await client.ask("什么是 Python 装饰器？")
         """
         if session_id:
-            events = await self.message.send(session_id, prompt, model=model, agent=agent)
-            return self._extract_text(events)
+            response = await self.message.send(session_id, prompt, model=model, agent=agent)
+            return self._extract_text_from_response(response)
 
         async with self._auto_session(title=title) as sid:
-            events = await self.message.send(sid, prompt, model=model, agent=agent)
-            return self._extract_text(events)
+            response = await self.message.send(sid, prompt, model=model, agent=agent)
+            return self._extract_text_from_response(response)
 
     async def ask_stream(
         self,
@@ -238,8 +260,10 @@ class AsyncOpenCode:
         agent: str | None = None,
         session_id: str | None = None,
         title: str | None = None,
-    ) -> AsyncIterator[SSEEvent]:
-        """流式提问。
+    ) -> AsyncIterator[Event]:
+        """流式提问（实时返回事件）。
+
+        通过监听 /event 端点的 SSE 流来获取实时事件。
 
         Args:
             prompt: 问题内容
@@ -249,20 +273,136 @@ class AsyncOpenCode:
             title: 新会话的标题（可选，仅当创建新会话时使用）
 
         Yields:
-            SSE 事件对象
+            事件对象
 
         Example:
             async for event in client.ask_stream("写一个快速排序"):
-                if isinstance(event, TextEvent):
-                    print(event.text, end="")
+                if event.type == "message.part.updated":
+                    if event.properties.part.text:
+                        print(event.properties.part.text, end="")
         """
         if session_id:
-            async for event in self.message.stream(session_id, prompt, model=model, agent=agent):
+            async for event in self._stream_with_session(session_id, prompt, model, agent):
                 yield event
         else:
             async with self._auto_session(title=title) as sid:
-                async for event in self.message.stream(sid, prompt, model=model, agent=agent):
+                async for event in self._stream_with_session(sid, prompt, model, agent):
                     yield event
+
+    async def _stream_with_session(
+        self,
+        session_id: str,
+        prompt: str,
+        model: str | None,
+        agent: str | None,
+    ) -> AsyncIterator[Event]:
+        """使用指定会话进行流式请求。
+
+        Args:
+            session_id: 会话 ID
+            prompt: 问题内容
+            model: 模型
+            agent: 代理
+
+        Yields:
+            事件对象
+        """
+        # 使用队列来传递事件
+        event_queue: asyncio.Queue[Event | None] = asyncio.Queue()
+        stop_event = asyncio.Event()
+
+        async def listen_events() -> None:
+            """监听事件流。"""
+            try:
+                async for event in self.event.subscribe():
+                    # 检查是否与当前会话相关
+                    if not self._is_event_for_session(event, session_id):
+                        continue
+
+                    # 放入队列
+                    await event_queue.put(event)
+
+                    # 检查是否完成（会话状态变为 idle）
+                    if isinstance(event, SessionStatusEvent):
+                        status_type = event.properties.status.get("type", "")
+                        if status_type == "idle":
+                            break
+
+                    if stop_event.is_set():
+                        break
+            except Exception:
+                pass
+            finally:
+                await event_queue.put(None)  # 发送结束信号
+
+        async def send_message() -> None:
+            """发送消息。"""
+            await self.message.send(session_id, prompt, model=model, agent=agent)
+
+        # 启动事件监听任务
+        listener_task = asyncio.create_task(listen_events())
+
+        # 等待一小段时间确保事件监听已启动
+        await asyncio.sleep(0.1)
+
+        # 发送消息（这会触发事件流）
+        await send_message()
+
+        # 从队列中获取事件
+        try:
+            while True:
+                event = await event_queue.get()
+                if event is None:
+                    break
+                yield event
+        finally:
+            # 确保取消监听任务
+            stop_event.set()
+            listener_task.cancel()
+            try:
+                await listener_task
+            except asyncio.CancelledError:
+                pass
+
+    def _is_event_for_session(self, event: Event, session_id: str) -> bool:
+        """检查事件是否属于指定会话。
+
+        Args:
+            event: 事件对象
+            session_id: 会话 ID
+
+        Returns:
+            是否属于该会话
+        """
+        if hasattr(event, "properties"):
+            props = event.properties
+
+            # SessionStatusEvent
+            if hasattr(props, "session_id") and props.session_id == session_id:
+                return True
+
+            # MessagePartUpdatedEvent
+            if hasattr(props, "part"):
+                part = props.part
+                if hasattr(part, "session_id") and part.session_id == session_id:
+                    return True
+
+            # MessageUpdatedEvent
+            if hasattr(props, "info"):
+                info = props.info
+                if isinstance(info, dict):
+                    if info.get("sessionID") == session_id:
+                        return True
+                elif hasattr(info, "session_id"):
+                    if info.session_id == session_id:
+                        return True
+
+            # SessionUpdatedEvent
+            if hasattr(props, "info") and isinstance(props.info, dict):
+                if props.info.get("id") == session_id:
+                    return True
+
+        return False
 
     async def create_session(
         self,
@@ -282,7 +422,7 @@ class AsyncOpenCode:
         Returns:
             创建的会话对象
         """
-        request = SessionCreate(title=title, parent_id=parent_id)
+        request = SessionCreate.model_validate({"title": title, "parentID": parent_id})
         return await self.session.create(request)
 
     # =========================================================================
@@ -307,17 +447,20 @@ class AsyncOpenCode:
             if self._config.cleanup_sessions:
                 await self.session.delete(session.id)
 
-    def _extract_text(self, events: list[SSEEvent]) -> str:
-        """从事件列表提取文本内容。
+    def _extract_text_from_response(self, response: dict[str, Any]) -> str:
+        """从消息响应中提取文本内容。
 
         Args:
-            events: 事件列表
+            response: 消息响应，包含 info 和 parts
 
         Returns:
             拼接后的文本内容
         """
         texts: list[str] = []
-        for event in events:
-            if isinstance(event, TextEvent) and event.text:
-                texts.append(event.text)
-        return "\n".join(texts)
+        parts = response.get("parts", [])
+        for part in parts:
+            if isinstance(part, dict) and part.get("type") == "text":
+                text = part.get("text", "")
+                if text:
+                    texts.append(text)
+        return "".join(texts)

@@ -28,7 +28,7 @@ class APIClient:
         *,
         params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Any:
         """发送 GET 请求。"""
         str_params: dict[str, str] | None = None
         if params:
@@ -41,7 +41,7 @@ class APIClient:
         *,
         json: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Any:
         """发送 POST 请求。"""
         return await self._transport.request("POST", path, json=json, headers=headers)
 
@@ -51,7 +51,7 @@ class APIClient:
         *,
         json: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Any:
         """发送 PATCH 请求。"""
         return await self._transport.request("PATCH", path, json=json, headers=headers)
 
@@ -60,7 +60,7 @@ class APIClient:
         path: str,
         *,
         headers: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Any:
         """发送 DELETE 请求。"""
         return await self._transport.request("DELETE", path, headers=headers)
 

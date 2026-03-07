@@ -56,7 +56,7 @@ class HTTPTransport(Transport):
         json: dict[str, Any] | None = None,
         params: dict[str, str] | None = None,
         headers: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Any:
         """发送 HTTP 请求。
 
         Args:

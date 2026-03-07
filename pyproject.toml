@@ -43,10 +43,10 @@ dev = [
 opencode-client = "opencode_client.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/example/opencode-client"
-Documentation = "https://github.com/example/opencode-client#readme"
-Repository = "https://github.com/example/opencode-client.git"
-Issues = "https://github.com/example/opencode-client/issues"
+Homepage = "https://github.com/iibyteCoder/opencode-client"
+Documentation = "https://github.com/iibyteCoder/opencode-client#readme"
+Repository = "https://github.com/iibyteCoder/opencode-client.git"
+Issues = "https://github.com/iibyteCoder/opencode-client/issues"
 
 [build-system]
 requires = ["hatchling"]
@@ -133,6 +133,17 @@ strict_concatenate = true
 extra_checks = true
 explicit_package_bases = true
 exclude = ["^tests/", "^\\.venv/"]
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[dependency-groups]
+dev = [
+    "pytest-aiohttp>=1.1.0",
+]
 
 [[tool.mypy.overrides]]
 module = ["aiohttp.*", "rich.*"]

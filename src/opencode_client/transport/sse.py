@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, cast
 
 import aiohttp
 
@@ -83,7 +83,7 @@ class SSEParser:
             解析后的字典
         """
         try:
-            return json.loads(data_str)
+            return cast(dict[str, Any], json.loads(data_str))
         except json.JSONDecodeError:
             return {"raw": data_str}
 

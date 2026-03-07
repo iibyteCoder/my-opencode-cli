@@ -56,7 +56,6 @@ from .models import (
     ProviderConfig,
     Session,
     SessionCreate,
-    SSEEvent,
     TextEvent,
     TextPart,
     ToolConfig,
@@ -91,15 +90,17 @@ __all__ = [
     "MessagePart",
     "MessageContent",
     "MessageSend",
-    "SSEEvent",
+    # 事件
     "TextEvent",
     "ToolUseEvent",
     "ToolResultEvent",
     "ErrorEvent",
     "DoneEvent",
     "EventType",
+    # 文件
     "FileInfo",
     "FileContent",
+    # 配置
     "ProviderConfig",
     "ToolConfig",
     "AgentConfig",

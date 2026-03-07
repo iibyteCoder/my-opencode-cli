@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import Field
 
@@ -35,6 +36,13 @@ class SessionStatus(OpenCodeModel):
     status: str = Field(default="idle", description="会话状态")
 
 
+class SessionTime(OpenCodeModel):
+    """会话时间信息。"""
+
+    created: int | None = Field(default=None, description="创建时间戳（毫秒）")
+    updated: int | None = Field(default=None, description="更新时间戳（毫秒）")
+
+
 class Session(OpenCodeModel):
     """会话信息。"""
 
@@ -44,5 +52,12 @@ class Session(OpenCodeModel):
     updated_at: datetime | None = Field(default=None, alias="updatedAt")
     parent_id: str | None = Field(default=None, alias="parentID")
     message_count: int = Field(default=0, ge=0, alias="messageCount")
+
+    # 额外字段（OpenCode API 返回）
+    slug: str | None = Field(default=None, description="会话 slug")
+    version: str | None = Field(default=None, description="版本号")
+    project_id: str | None = Field(default=None, alias="projectID", description="项目 ID")
+    directory: str | None = Field(default=None, description="工作目录")
+    time: SessionTime | dict[str, Any] | None = Field(default=None, description="时间信息")
 
     model_config = OpenCodeModel.model_config | {"populate_by_name": True}

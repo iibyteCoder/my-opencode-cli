@@ -9,16 +9,39 @@ from .agent import AgentInfo
 from .base import OpenCodeModel
 from .config import AgentConfig, OpenCodeConfig, ProviderConfig, ToolConfig
 from .event import (
+    # 兼容旧 API 的事件类型
     DoneEvent,
     ErrorEvent,
+    # 新的 OpenCode 事件类型
+    Event,
+    EventMessagePart,
     EventType,
-    SSEEvent,
+    KnownEvent,
+    MessageInfo,
+    MessagePartUpdatedEvent,
+    MessageUpdatedEvent,
+    OpenCodeEvent,
+    ServerConnectedEvent,
+    SessionDiffEvent,
+    SessionStatusEvent,
+    SessionStatusInfo,
+    SessionUpdatedEvent,
     TextEvent,
     ToolResultEvent,
     ToolUseEvent,
+    parse_event,
 )
 from .file import FileContent, FileInfo
-from .message import FilePart, ImagePart, MessageContent, MessagePart, MessageSend, TextPart
+from .message import (
+    FilePart,
+    ImagePart,
+    Message,
+    MessageContent,
+    MessagePart,
+    MessageSend,
+    ModelRef,
+    TextPart,
+)
 from .session import Session, SessionCreate
 from .tool import ToolCall, ToolInfo, ToolResult
 
@@ -35,8 +58,23 @@ __all__ = [
     "MessagePart",
     "MessageContent",
     "MessageSend",
-    # Event
-    "SSEEvent",
+    "Message",
+    "ModelRef",
+    # Event (新)
+    "Event",
+    "KnownEvent",
+    "MessageInfo",
+    "EventMessagePart",
+    "MessagePartUpdatedEvent",
+    "MessageUpdatedEvent",
+    "OpenCodeEvent",
+    "ServerConnectedEvent",
+    "SessionDiffEvent",
+    "SessionStatusEvent",
+    "SessionStatusInfo",
+    "SessionUpdatedEvent",
+    "parse_event",
+    # Event (兼容旧 API)
     "TextEvent",
     "ToolUseEvent",
     "ToolResultEvent",
