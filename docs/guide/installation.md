@@ -14,20 +14,20 @@
 [uv](https://github.com/astral-sh/uv) 是一个快速的 Python 包管理器：
 
 ```bash
-uv add opencode-client
+uv add my-opencode-cli
 ```
 
 ### 使用 pip
 
 ```bash
-pip install opencode-client
+pip install my-opencode-cli
 ```
 
 ### 从源码安装
 
 ```bash
-git clone https://github.com/example/opencode-client.git
-cd opencode-client
+git clone https://github.com/example/my-opencode-cli.git
+cd my-opencode-cli
 uv sync --all-extras
 ```
 

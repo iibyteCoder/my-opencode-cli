@@ -9,9 +9,9 @@ Python 客户端库，用于与 [OpenCode](https://opencode.ai) 服务器交互�
 ## 安装
 
 ```bash
-uv add opencode-client
+uv add my-opencode-cli
 # 或
-pip install opencode-client
+pip install my-opencode-cli
 ```
 
 ## 快速开始
@@ -52,8 +52,8 @@ with OpenCode(start_server=True) as client:
 ## 开发
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/opencode-client.git
-cd opencode-client
+git clone https://github.com/iibyteCoder/my-opencode-cli.git
+cd my-opencode-cli
 uv sync --all-extras
 
 # 测试
