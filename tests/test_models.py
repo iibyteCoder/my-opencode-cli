@@ -72,7 +72,7 @@ class TestEventModels:
         assert event.type == "done"
 
     def test_sse_event(self):
-        """测试 SSEEventBase 基类。"""
-        event = SSEEventBase(type="custom", data={"key": "value"})
+        """测试 SSEEventBase (OpenCodeEvent) 基类。"""
+        event = SSEEventBase(type="custom", properties={"key": "value"})
         assert event.type == "custom"
-        assert event.data == {"key": "value"}
+        assert event.properties == {"key": "value"}

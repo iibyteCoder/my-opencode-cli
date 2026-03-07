@@ -15,6 +15,10 @@ class FileNode(OpenCodeModel):
     用于表示目录列表中的文件或目录。
     """
 
+    model_config = OpenCodeModel.model_config | {
+        "extra": "allow",  # 允许额外字段（如 absolute, ignored）
+    }
+
     name: str = Field(..., description="文件或目录名")
     path: str = Field(..., description="相对路径")
     type: Literal["file", "directory"] = Field(..., description="类型")

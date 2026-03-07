@@ -8,7 +8,7 @@ from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
 
 from ..core.errors import APIError
-from ..models.event import Event, parse_event
+from ..models.event import Event, is_event_for_session, parse_event
 
 if TYPE_CHECKING:
     import aiohttp
@@ -122,20 +122,20 @@ class EventAPI:
         self,
         event_type: str,
         *,
-        timeout: float | None = None,
+        timeout_seconds: float | None = None,
     ) -> Event | None:
         """等待特定类型的事件。
 
         Args:
             event_type: 要等待的事件类型
-            timeout: 超时时间（秒）
+            timeout_seconds: 超时时间（秒）
 
         Returns:
             匹配的事件，如果超时则返回 None
         """
         import asyncio
 
-        cm = asyncio.timeout(timeout) if timeout else nullcontext()
+        cm = asyncio.timeout(timeout_seconds) if timeout_seconds else nullcontext()
         try:
             async with cm:
                 async for event in self.subscribe():
@@ -159,32 +159,5 @@ class EventAPI:
         """
         async for event in self.subscribe():
             # 过滤与该会话相关的事件
-            if self._is_event_for_session(event, session_id):
+            if is_event_for_session(event, session_id):
                 yield event
-
-    def _is_event_for_session(self, event: Event, session_id: str) -> bool:
-        """检查事件是否属于指定会话。"""
-        # 使用 getattr 安全访问属性
-        properties = getattr(event, "properties", None)
-        if properties is None:
-            return False
-
-        # 检查 session_id 属性
-        if getattr(properties, "session_id", None) == session_id:
-            return True
-
-        # 检查 part.session_id
-        part = getattr(properties, "part", None)
-        if part is not None and getattr(part, "session_id", None) == session_id:
-            return True
-
-        # 检查 info 字典或对象
-        info = getattr(properties, "info", None)
-        if info is not None:
-            if isinstance(info, dict):
-                if info.get("sessionID") == session_id or info.get("id") == session_id:
-                    return True
-            elif getattr(info, "session_id", None) == session_id:
-                return True
-
-        return False

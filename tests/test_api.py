@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -14,7 +13,6 @@ from my_opencode_cli.api.message import MessageAPI
 from my_opencode_cli.api.project import ProjectAPI
 from my_opencode_cli.api.search import SearchAPI
 from my_opencode_cli.api.session import SessionAPI
-from my_opencode_cli.models.event import TextEvent, DoneEvent
 from my_opencode_cli.models.session import Session, SessionCreate, SessionUpdate
 from my_opencode_cli.transport.http import HTTPTransport
 
@@ -251,6 +249,15 @@ class TestSessionAPI:
 # =============================================================================
 
 
+def make_message_response(texts: list[str]) -> dict[str, Any]:
+    """创建模拟的消息响应。"""
+    parts = [{"type": "text", "text": text} for text in texts]
+    return {
+        "info": {"id": "msg-1", "sessionID": "session-1", "role": "assistant"},
+        "parts": parts,
+    }
+
+
 class TestMessageAPI:
     """测试 MessageAPI。"""
 
@@ -286,35 +293,26 @@ class TestMessageAPI:
     @pytest.mark.asyncio
     async def test_send_text_message(self, mock_transport: MagicMock) -> None:
         """测试发送文本消息。"""
-        async def mock_stream(
-            method: str, path: str, **kwargs: Any
-        ) -> AsyncIterator[dict[str, Any]]:
-            yield {"type": "text", "text": "Hello"}
-            yield {"type": "done"}
-
-        mock_transport.stream = mock_stream
+        mock_transport.request.return_value = make_message_response(["Hello"])
 
         api = MessageAPI(mock_transport)
-        events = await api.send("session-1", "Hello")
+        response = await api.send("session-1", "Hello")
 
-        assert len(events) == 2
-        assert isinstance(events[0], TextEvent)
-        assert events[0].text == "Hello"
-        assert isinstance(events[1], DoneEvent)
+        assert response["info"]["id"] == "msg-1"
+        assert len(response["parts"]) == 1
+        assert response["parts"][0]["text"] == "Hello"
 
     @pytest.mark.asyncio
     async def test_send_with_model_string(self, mock_transport: MagicMock) -> None:
         """测试带模型字符串发送消息。"""
         captured_json: dict[str, Any] = {}
 
-        async def mock_stream(
-            method: str, path: str, **kwargs: Any
-        ) -> AsyncIterator[dict[str, Any]]:
+        async def mock_request(method: str, path: str, **kwargs: Any) -> dict[str, Any]:
             nonlocal captured_json
             captured_json = kwargs.get("json", {})
-            yield {"type": "done"}
+            return make_message_response(["OK"])
 
-        mock_transport.stream = mock_stream
+        mock_transport.request = mock_request
 
         api = MessageAPI(mock_transport)
         await api.send("session-1", "Hello", model="anthropic/claude-3")
@@ -327,14 +325,12 @@ class TestMessageAPI:
         """测试带模型字典发送消息。"""
         captured_json: dict[str, Any] = {}
 
-        async def mock_stream(
-            method: str, path: str, **kwargs: Any
-        ) -> AsyncIterator[dict[str, Any]]:
+        async def mock_request(method: str, path: str, **kwargs: Any) -> dict[str, Any]:
             nonlocal captured_json
             captured_json = kwargs.get("json", {})
-            yield {"type": "done"}
+            return make_message_response(["OK"])
 
-        mock_transport.stream = mock_stream
+        mock_transport.request = mock_request
 
         api = MessageAPI(mock_transport)
         await api.send(
@@ -350,14 +346,12 @@ class TestMessageAPI:
         """测试带代理发送消息。"""
         captured_json: dict[str, Any] = {}
 
-        async def mock_stream(
-            method: str, path: str, **kwargs: Any
-        ) -> AsyncIterator[dict[str, Any]]:
+        async def mock_request(method: str, path: str, **kwargs: Any) -> dict[str, Any]:
             nonlocal captured_json
             captured_json = kwargs.get("json", {})
-            yield {"type": "done"}
+            return make_message_response(["OK"])
 
-        mock_transport.stream = mock_stream
+        mock_transport.request = mock_request
 
         api = MessageAPI(mock_transport)
         await api.send("session-1", "Hello", agent="code-assistant")
@@ -432,74 +426,6 @@ class TestMessageAPI:
         result = await api.shell("session-1", "ls -la")
 
         assert captured_json["command"] == "ls -la"
-
-    @pytest.mark.asyncio
-    async def test_parse_event_text(self, mock_transport: MagicMock) -> None:
-        """测试解析文本事件。"""
-        api = MessageAPI(mock_transport)
-        event = api._parse_event({"type": "text", "text": "Hello"})
-
-        assert isinstance(event, TextEvent)
-        assert event.text == "Hello"
-
-    @pytest.mark.asyncio
-    async def test_parse_event_tool_use(self, mock_transport: MagicMock) -> None:
-        """测试解析工具调用事件。"""
-        api = MessageAPI(mock_transport)
-        event = api._parse_event({
-            "type": "tool_use",
-            "tool": "read_file",
-            "input": {"path": "/test.py"},
-        })
-
-        assert event.type == "tool_use"
-        assert event.tool == "read_file"
-
-    @pytest.mark.asyncio
-    async def test_parse_event_tool_result(self, mock_transport: MagicMock) -> None:
-        """测试解析工具结果事件。"""
-        api = MessageAPI(mock_transport)
-        event = api._parse_event({
-            "type": "tool_result",
-            "tool": "read_file",
-            "output": "file content",
-        })
-
-        assert event.type == "tool_result"
-        assert event.tool == "read_file"
-
-    @pytest.mark.asyncio
-    async def test_parse_event_error(self, mock_transport: MagicMock) -> None:
-        """测试解析错误事件。"""
-        api = MessageAPI(mock_transport)
-        event = api._parse_event({
-            "type": "error",
-            "message": "Something went wrong",
-            "code": "ERR_001",
-        })
-
-        assert event.type == "error"
-        assert event.message == "Something went wrong"
-        assert event.code == "ERR_001"
-
-    @pytest.mark.asyncio
-    async def test_parse_event_done(self, mock_transport: MagicMock) -> None:
-        """测试解析完成事件。"""
-        api = MessageAPI(mock_transport)
-        event = api._parse_event({"type": "done"})
-
-        assert isinstance(event, DoneEvent)
-
-    @pytest.mark.asyncio
-    async def test_parse_event_unknown(self, mock_transport: MagicMock) -> None:
-        """测试解析未知事件。"""
-        api = MessageAPI(mock_transport)
-        event = api._parse_event({
-            "type": "custom",
-            "data": {"key": "value"},
-        })
-
-        assert event.type == "custom"
 
 
 # =============================================================================
@@ -608,15 +534,15 @@ class TestAgentAPI:
     async def test_list(self, mock_transport: MagicMock) -> None:
         """测试列出代理。"""
         mock_transport.request.return_value = [
-            {"id": "agent-1", "name": "code-assistant", "model": "claude-3"},
-            {"id": "agent-2", "name": "data-analyst", "model": "gpt-4"},
+            {"name": "code-assistant", "model": "claude-3"},
+            {"name": "data-analyst", "model": "gpt-4"},
         ]
 
         api = AgentAPI(mock_transport)
         agents = await api.list()
 
         assert len(agents) == 2
-        assert agents[0].id == "agent-1"
+        assert agents[0].id == "code-assistant"  # id 是 name 的别名
         assert agents[0].name == "code-assistant"
 
 

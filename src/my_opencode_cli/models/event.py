@@ -44,14 +44,17 @@ class MessageInfo(OpenCodeModel):
 class EventMessagePart(OpenCodeModel):
     """SSE 事件中的消息部分。"""
 
+    model_config = OpenCodeModel.model_config | {
+        "populate_by_name": True,
+        "extra": "allow",  # 允许额外字段（如 snapshot）
+    }
+
     id: str = Field(..., description="部分 ID")
     session_id: str = Field(..., alias="sessionID", description="会话 ID")
     message_id: str = Field(..., alias="messageID", description="消息 ID")
     type: str = Field(..., description="部分类型")
     text: str | None = Field(default=None, description="文本内容")
     time: dict[str, Any] | None = Field(default=None, description="时间信息")
-
-    model_config = OpenCodeModel.model_config | {"populate_by_name": True}
 
 
 class SessionStatusInfo(OpenCodeModel):
@@ -86,6 +89,18 @@ class MessagePartUpdatedProperties(OpenCodeModel):
     part: EventMessagePart = Field(..., description="消息部分")
 
 
+class MessagePartDeltaProperties(OpenCodeModel):
+    """message.part.delta 事件属性。"""
+
+    model_config = OpenCodeModel.model_config | {
+        "populate_by_name": True,
+        "extra": "allow",
+    }
+
+    delta: dict[str, Any] | str | None = Field(default=None, description="增量内容")
+    part: EventMessagePart | None = Field(default=None, description="消息部分")
+
+
 class SessionStatusProperties(OpenCodeModel):
     """session.status 事件属性。"""
 
@@ -95,10 +110,20 @@ class SessionStatusProperties(OpenCodeModel):
     model_config = OpenCodeModel.model_config | {"populate_by_name": True}
 
 
+class SessionInfo(OpenCodeModel):
+    """会话信息。"""
+
+    model_config = OpenCodeModel.model_config | {"extra": "allow"}
+
+    id: str | None = Field(default=None, description="会话 ID")
+    title: str | None = Field(default=None, description="会话标题")
+    parent_id: str | None = Field(default=None, alias="parentID", description="父会话 ID")
+
+
 class SessionUpdatedProperties(OpenCodeModel):
     """session.updated 事件属性。"""
 
-    info: dict[str, Any] = Field(..., description="会话信息")
+    info: SessionInfo = Field(..., description="会话信息")
 
 
 class SessionDiffProperties(OpenCodeModel):
@@ -137,6 +162,13 @@ class MessagePartUpdatedEvent(OpenCodeModel):
 
     type: Literal["message.part.updated"] = "message.part.updated"
     properties: MessagePartUpdatedProperties = Field(..., description="事件属性")
+
+
+class MessagePartDeltaEvent(OpenCodeModel):
+    """消息部分增量事件。"""
+
+    type: Literal["message.part.delta"] = "message.part.delta"
+    properties: MessagePartDeltaProperties = Field(..., description="事件属性")
 
 
 class SessionStatusEvent(OpenCodeModel):
@@ -180,6 +212,7 @@ KnownEvent: TypeAlias = (
     ServerConnectedEvent
     | MessageUpdatedEvent
     | MessagePartUpdatedEvent
+    | MessagePartDeltaEvent
     | SessionStatusEvent
     | SessionUpdatedEvent
     | SessionDiffEvent
@@ -208,22 +241,53 @@ def parse_event(data: dict[str, Any]) -> Event:
     """
     event_type = data.get("type", "")
 
-    # 根据类型分发到对应的事件类
-    if event_type == "server.connected":
-        return ServerConnectedEvent.model_validate(data)
-    elif event_type == "message.updated":
-        return MessageUpdatedEvent.model_validate(data)
-    elif event_type == "message.part.updated":
-        return MessagePartUpdatedEvent.model_validate(data)
-    elif event_type == "session.status":
-        return SessionStatusEvent.model_validate(data)
-    elif event_type == "session.updated":
-        return SessionUpdatedEvent.model_validate(data)
-    elif event_type == "session.diff":
-        return SessionDiffEvent.model_validate(data)
-    else:
-        # 未知事件类型，使用通用类
-        return OpenCodeEvent.model_validate(data)
+    # 使用 match 语句分发到对应的事件类
+    match event_type:
+        case "server.connected":
+            return ServerConnectedEvent.model_validate(data)
+        case "message.updated":
+            return MessageUpdatedEvent.model_validate(data)
+        case "message.part.updated":
+            return MessagePartUpdatedEvent.model_validate(data)
+        case "message.part.delta":
+            return MessagePartDeltaEvent.model_validate(data)
+        case "session.status":
+            return SessionStatusEvent.model_validate(data)
+        case "session.updated":
+            return SessionUpdatedEvent.model_validate(data)
+        case "session.diff":
+            return SessionDiffEvent.model_validate(data)
+        case _:
+            # 未知事件类型，使用通用类
+            return OpenCodeEvent.model_validate(data)
+
+
+def is_event_for_session(event: Event, session_id: str) -> bool:
+    """检查事件是否属于指定会话。
+
+    Args:
+        event: 事件对象
+        session_id: 会话 ID
+
+    Returns:
+        是否属于该会话
+    """
+    match event:
+        case SessionStatusEvent(properties=p):
+            return p.session_id == session_id
+        case SessionDiffEvent(properties=p):
+            return p.session_id == session_id
+        case MessagePartUpdatedEvent(properties=p):
+            return p.part.session_id == session_id
+        case MessagePartDeltaEvent():
+            # delta 事件无法确定会话，默认返回 True
+            return True
+        case MessageUpdatedEvent(properties=p):
+            return p.info.session_id == session_id
+        case SessionUpdatedEvent(properties=p):
+            return p.info.id == session_id
+        case _:
+            return False
 
 
 # =============================================================================

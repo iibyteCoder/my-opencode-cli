@@ -60,4 +60,7 @@ class Session(OpenCodeModel):
     directory: str | None = Field(default=None, description="工作目录")
     time: SessionTime | dict[str, Any] | None = Field(default=None, description="时间信息")
 
-    model_config = OpenCodeModel.model_config | {"populate_by_name": True}
+    model_config = OpenCodeModel.model_config | {
+        "populate_by_name": True,
+        "extra": "allow",
+    }

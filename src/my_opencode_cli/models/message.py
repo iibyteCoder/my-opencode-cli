@@ -13,6 +13,8 @@ from .base import OpenCodeModel
 class TextPart(OpenCodeModel):
     """文本消息部分。"""
 
+    model_config = OpenCodeModel.model_config | {"extra": "allow"}
+
     type: Literal["text"] = "text"
     text: str
 

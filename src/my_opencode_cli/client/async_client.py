@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Any, Self
 
 from ..api.agent import AgentAPI
@@ -16,10 +16,7 @@ from ..api.search import SearchAPI
 from ..api.session import SessionAPI
 from ..core.config import ClientConfig
 from ..core.errors import ConnectionError
-from ..models.event import (
-    Event,
-    SessionStatusEvent,
-)
+from ..models.event import Event, SessionStatusEvent, is_event_for_session
 from ..models.session import Session, SessionCreate
 from ..transport.http import HTTPTransport
 from ..transport.process import ServerProcess
@@ -316,7 +313,7 @@ class AsyncOpenCode:
             try:
                 async for event in self.event.subscribe():
                     # 检查是否与当前会话相关
-                    if not self._is_event_for_session(event, session_id):
+                    if not is_event_for_session(event, session_id):
                         continue
 
                     # 放入队列
@@ -330,8 +327,8 @@ class AsyncOpenCode:
 
                     if stop_event.is_set():
                         break
-            except Exception:
-                pass
+            except Exception:  # noqa: S110
+                pass  # 后台监听任务，忽略所有异常确保 finally 执行
             finally:
                 await event_queue.put(None)  # 发送结束信号
 
@@ -359,50 +356,8 @@ class AsyncOpenCode:
             # 确保取消监听任务
             stop_event.set()
             listener_task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await listener_task
-            except asyncio.CancelledError:
-                pass
-
-    def _is_event_for_session(self, event: Event, session_id: str) -> bool:
-        """检查事件是否属于指定会话。
-
-        Args:
-            event: 事件对象
-            session_id: 会话 ID
-
-        Returns:
-            是否属于该会话
-        """
-        if hasattr(event, "properties"):
-            props = event.properties
-
-            # SessionStatusEvent
-            if hasattr(props, "session_id") and props.session_id == session_id:
-                return True
-
-            # MessagePartUpdatedEvent
-            if hasattr(props, "part"):
-                part = props.part
-                if hasattr(part, "session_id") and part.session_id == session_id:
-                    return True
-
-            # MessageUpdatedEvent
-            if hasattr(props, "info"):
-                info = props.info
-                if isinstance(info, dict):
-                    if info.get("sessionID") == session_id:
-                        return True
-                elif hasattr(info, "session_id"):
-                    if info.session_id == session_id:
-                        return True
-
-            # SessionUpdatedEvent
-            if hasattr(props, "info") and isinstance(props.info, dict):
-                if props.info.get("id") == session_id:
-                    return True
-
-        return False
 
     async def create_session(
         self,
@@ -456,11 +411,19 @@ class AsyncOpenCode:
         Returns:
             拼接后的文本内容
         """
+        from pydantic import ValidationError
+
+        from ..models.message import TextPart
+
         texts: list[str] = []
-        parts = response.get("parts", [])
-        for part in parts:
-            if isinstance(part, dict) and part.get("type") == "text":
-                text = part.get("text", "")
-                if text:
-                    texts.append(text)
+        parts_raw: list[Any] = response.get("parts", [])
+        for part_raw in parts_raw:
+            if isinstance(part_raw, dict):
+                # 尝试解析为 TextPart
+                try:
+                    part = TextPart.model_validate(part_raw)
+                    texts.append(part.text)
+                except ValidationError:
+                    # 非 TextPart 类型的部分，跳过
+                    pass
         return "".join(texts)

@@ -11,8 +11,21 @@ from my_opencode_cli.client.async_client import AsyncOpenCode
 from my_opencode_cli.client.sync_client import OpenCode
 from my_opencode_cli.core.config import ClientConfig
 from my_opencode_cli.core.errors import ConnectionError
-from my_opencode_cli.models.event import TextEvent, DoneEvent
 from my_opencode_cli.models.session import Session
+
+
+# =============================================================================
+# 辅助函数
+# =============================================================================
+
+
+def make_message_response(texts: list[str]) -> dict[str, Any]:
+    """创建模拟的消息响应。"""
+    parts = [{"type": "text", "text": text} for text in texts]
+    return {
+        "info": {"id": "msg-1", "sessionID": "session-1", "role": "assistant"},
+        "parts": parts,
+    }
 
 
 # =============================================================================
@@ -166,13 +179,10 @@ class TestAsyncOpenCode:
         )
         mock_session_api.delete = AsyncMock()
 
-        # Mock message API
+        # Mock message API - 使用新的响应格式
         mock_message_api = MagicMock()
         mock_message_api.send = AsyncMock(
-            return_value=[
-                TextEvent(text="Hello, AI!"),
-                DoneEvent(),
-            ]
+            return_value=make_message_response(["Hello, AI!"])
         )
 
         client._session_api = mock_session_api
@@ -192,10 +202,7 @@ class TestAsyncOpenCode:
 
         mock_message_api = MagicMock()
         mock_message_api.send = AsyncMock(
-            return_value=[
-                TextEvent(text="Response"),
-                DoneEvent(),
-            ]
+            return_value=make_message_response(["Response"])
         )
 
         client._message_api = mock_message_api
@@ -219,7 +226,9 @@ class TestAsyncOpenCode:
         mock_session_api.delete = AsyncMock()
 
         mock_message_api = MagicMock()
-        mock_message_api.send = AsyncMock(return_value=[TextEvent(text="OK")])
+        mock_message_api.send = AsyncMock(
+            return_value=make_message_response(["OK"])
+        )
 
         client._session_api = mock_session_api
         client._message_api = mock_message_api
@@ -240,7 +249,9 @@ class TestAsyncOpenCode:
         mock_session_api.delete = AsyncMock()
 
         mock_message_api = MagicMock()
-        mock_message_api.send = AsyncMock(return_value=[TextEvent(text="OK")])
+        mock_message_api.send = AsyncMock(
+            return_value=make_message_response(["OK"])
+        )
 
         client._session_api = mock_session_api
         client._message_api = mock_message_api
@@ -250,35 +261,6 @@ class TestAsyncOpenCode:
 
         call_args = mock_message_api.send.call_args
         assert call_args[1]["agent"] == "code-assistant"
-
-    @pytest.mark.asyncio
-    async def test_ask_stream(self) -> None:
-        """测试流式提问。"""
-        client = AsyncOpenCode(base_url="http://localhost:4096")
-
-        async def mock_stream(*args: Any, **kwargs: Any) -> Any:
-            yield TextEvent(text="Hello")
-            yield TextEvent(text=" World")
-            yield DoneEvent()
-
-        mock_session_api = MagicMock()
-        mock_session_api.create = AsyncMock(return_value=Session(id="session-1"))
-        mock_session_api.delete = AsyncMock()
-
-        mock_message_api = MagicMock()
-        mock_message_api.stream = mock_stream
-
-        client._session_api = mock_session_api
-        client._message_api = mock_message_api
-        client._transport = MagicMock()
-
-        events = []
-        async for event in client.ask_stream("Hello"):
-            events.append(event)
-
-        assert len(events) == 3
-        assert isinstance(events[0], TextEvent)
-        assert events[0].text == "Hello"
 
     @pytest.mark.asyncio
     async def test_cleanup_sessions_enabled(self) -> None:
@@ -291,7 +273,9 @@ class TestAsyncOpenCode:
         mock_session_api.delete = AsyncMock()
 
         mock_message_api = MagicMock()
-        mock_message_api.send = AsyncMock(return_value=[TextEvent(text="OK")])
+        mock_message_api.send = AsyncMock(
+            return_value=make_message_response(["OK"])
+        )
 
         client._session_api = mock_session_api
         client._message_api = mock_message_api
@@ -313,7 +297,9 @@ class TestAsyncOpenCode:
         mock_session_api.delete = AsyncMock()
 
         mock_message_api = MagicMock()
-        mock_message_api.send = AsyncMock(return_value=[TextEvent(text="OK")])
+        mock_message_api.send = AsyncMock(
+            return_value=make_message_response(["OK"])
+        )
 
         client._session_api = mock_session_api
         client._message_api = mock_message_api
@@ -325,40 +311,38 @@ class TestAsyncOpenCode:
         mock_session_api.delete.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_extract_text(self) -> None:
-        """测试文本提取。"""
+    async def test_extract_text_from_response(self) -> None:
+        """测试从响应中提取文本。"""
         client = AsyncOpenCode(base_url="http://localhost:4096")
 
-        events = [
-            TextEvent(text="Line 1"),
-            TextEvent(text="Line 2"),
-            DoneEvent(),
-        ]
-
-        text = client._extract_text(events)
-        assert text == "Line 1\nLine 2"
+        response = make_message_response(["Line 1", "Line 2"])
+        text = client._extract_text_from_response(response)
+        assert text == "Line 1Line 2"
 
     @pytest.mark.asyncio
-    async def test_extract_text_empty(self) -> None:
-        """测试空事件列表的文本提取。"""
+    async def test_extract_text_from_response_empty(self) -> None:
+        """测试空响应的文本提取。"""
         client = AsyncOpenCode(base_url="http://localhost:4096")
 
-        text = client._extract_text([])
+        response: dict[str, Any] = {"info": {}, "parts": []}
+        text = client._extract_text_from_response(response)
         assert text == ""
 
     @pytest.mark.asyncio
-    async def test_extract_text_only_text_events(self) -> None:
-        """测试只提取 TextEvent。"""
+    async def test_extract_text_from_response_mixed_parts(self) -> None:
+        """测试混合类型部分的文本提取。"""
         client = AsyncOpenCode(base_url="http://localhost:4096")
 
-        events: list[Any] = [
-            TextEvent(text="Hello"),
-            DoneEvent(),
-            TextEvent(text="World"),
-        ]
-
-        text = client._extract_text(events)
-        assert text == "Hello\nWorld"
+        response: dict[str, Any] = {
+            "info": {},
+            "parts": [
+                {"type": "text", "text": "Hello"},
+                {"type": "tool_use", "name": "some_tool"},  # 非 text 类型
+                {"type": "text", "text": "World"},
+            ],
+        }
+        text = client._extract_text_from_response(response)
+        assert text == "HelloWorld"
 
 
 # =============================================================================
@@ -460,24 +444,8 @@ class TestOpenCode:
                 model="anthropic/claude-3",
                 agent="assistant",
                 session_id="session-1",
+                title=None,
             )
-
-    def test_ask_stream(self) -> None:
-        """测试同步流式提问。"""
-        client = OpenCode(base_url="http://localhost:4096")
-
-        async def mock_ask_stream(*args: Any, **kwargs: Any) -> Any:
-            yield TextEvent(text="Hello")
-            yield DoneEvent()
-
-        with patch.object(
-            client._async_client, "ask_stream", side_effect=mock_ask_stream
-        ):
-            with client:
-                events = client.ask_stream("Hello")
-
-            assert len(events) == 2
-            assert isinstance(events[0], TextEvent)
 
     def test_create_session(self) -> None:
         """测试同步创建会话。"""
